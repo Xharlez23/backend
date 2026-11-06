@@ -1,0 +1,13 @@
+rules_version = '2';
+
+// Toda la lectura/escritura de datos pasa por el backend (Node + Firebase Admin SDK),
+// que usa credenciales de servicio y por lo tanto IGNORA estas reglas.
+// Por eso aqui se bloquea todo acceso directo desde el cliente (Angular) a Firestore:
+// el frontend solo usa Firebase Auth para iniciar sesion, nunca lee/escribe Firestore directamente.
+service cloud.firestore {
+  match /databases/{database}/documents {
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}
