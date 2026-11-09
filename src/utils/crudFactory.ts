@@ -17,6 +17,10 @@ interface CrudOptions {
   /** Campo por el que se ordena por defecto */
   orderBy?: string
   orderDir?: firestore.OrderByDirection
+  /** Hook para transformar los datos antes de crear */
+  beforeCreate?: (data: any) => Promise<any>
+  /** Hook para transformar los datos antes de actualizar (recibe el documento actual) */
+  beforeUpdate?: (id: string, data: any, current: any) => Promise<any>
 }
 
 /**
@@ -71,7 +75,8 @@ export function createCrudRouter(opts: CrudOptions): Router {
         throw new ApiError(400, parsed.error.issues.map((i) => i.message).join(', '))
       }
       const now = new Date().toISOString()
-      const data = { ...parsed.data, created_at: now, updated_at: now }
+      let data: any = { ...parsed.data, created_at: now, updated_at: now }
+      if (opts.beforeCreate) data = await opts.beforeCreate(data)
       const ref = await col().add(data)
       res.status(201).json({ id: ref.id, ...data })
     } catch (err) {
@@ -90,7 +95,8 @@ export function createCrudRouter(opts: CrudOptions): Router {
       const doc = await ref.get()
       if (!doc.exists) throw new ApiError(404, 'Registro no encontrado')
 
-      const data = { ...parsed.data, updated_at: new Date().toISOString() }
+      let data: any = { ...parsed.data, updated_at: new Date().toISOString() }
+      if (opts.beforeUpdate) data = await opts.beforeUpdate(req.params.id, data, doc.data())
       await ref.update(data)
       res.json({ id: ref.id, ...doc.data(), ...data })
     } catch (err) {

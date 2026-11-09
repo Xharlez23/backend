@@ -12,6 +12,16 @@ authRouter.get('/me', requireAuth, (req, res) => {
   res.json(req.perfil)
 })
 
+// Mecanicos activos (para asignar en ordenes). Accesible a cualquier usuario autenticado.
+authRouter.get('/mecanicos', requireAuth, async (_req, res, next) => {
+  try {
+    const snap = await db.collection('perfiles').where('rol', '==', 'mecanico').where('activo', '==', true).get()
+    res.json(snap.docs.map((d: firestore.QueryDocumentSnapshot) => ({ id: d.id, nombre: d.data().nombre })))
+  } catch (err) {
+    next(err)
+  }
+})
+
 // --- Gestion de usuarios (solo admin) -------------------------------------
 
 const crearUsuarioSchema = z.object({
