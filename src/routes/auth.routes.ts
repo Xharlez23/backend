@@ -73,6 +73,9 @@ authRouter.put('/usuarios/:id', requireAuth, requireRole('admin'), async (req, r
     if (!parsed.success) {
       throw new ApiError(400, parsed.error.issues.map((i) => i.message).join(', '))
     }
+    if (req.params.id === req.uid && (parsed.data.activo === false || (parsed.data.rol && parsed.data.rol !== 'admin'))) {
+      throw new ApiError(400, 'No puedes desactivarte ni quitarte el rol de administrador a ti mismo')
+    }
     const ref = db.collection('perfiles').doc(req.params.id)
     await ref.update({ ...parsed.data, updated_at: new Date().toISOString() })
     const doc = await ref.get()
